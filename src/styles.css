@@ -124,7 +124,7 @@ body{
 /* Honeypot hidden field for bots */
 .hp-hidden{position:absolute !important;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;border:0;padding:0;margin:0}
 
-/* Captcha aesthetic */
+/* Captcha */
 .captcha-row{display:flex;gap:12px;align-items:center;margin-top:8px}
 .captcha-box{background:linear-gradient(180deg,#f8fbff,#ffffff);border-radius:10px;padding:10px 12px;border:1px solid #eaf3ff;display:flex;flex-direction:column;align-items:center;min-width:110px}
 .captcha-prompt{font-size:12px;color:var(--muted);margin-bottom:6px}
@@ -166,6 +166,58 @@ body {
 .btn.secondary { background:#eef6ff; color:#0b72ff }
 
 .muted { color:#6b8899 }
+
+/* Tabla de datos simple y limpia */
+.data-table{width:100%;border-collapse:collapse;font-size:14px}
+.data-table th,.data-table td{padding:10px 12px;text-align:left;border-bottom:1px solid #f0f6fb}
+.data-table thead th{font-weight:800;color:#0b3a57;background:linear-gradient(180deg,#f9fcff,#ffffff)}
+.data-table tbody tr:hover{background:#fbfdff}
+
+.small-input{width:88px;padding:8px;border-radius:8px;border:1px solid #e3edf7;background:#fbfdff}
+
+/* Ajustes del panel lateral de saldos */
+.card .data-table tbody td{vertical-align:middle}
+
+/* Toolbar and search styles */
+.toolbar{display:flex;align-items:center;gap:8px}
+.search-wrap{display:flex;align-items:center;gap:8px;background:#f6fbff;padding:6px 10px;border-radius:10px;border:1px solid #eaf3ff}
+.search-input{border:0;background:transparent;padding:6px 8px;min-width:220px}
+
+/* Badges for price change */
+.badge-up{display:inline-block;padding:6px 8px;border-radius:999px;background:rgba(28,165,79,0.08);color:#1ca549;font-weight:700}
+.badge-down{display:inline-block;padding:6px 8px;border-radius:999px;background:rgba(255,85,85,0.06);color:#ff5555;font-weight:700}
+
+/* Coin link style */
+.coin-link{color:#0b72ff;font-weight:700;text-decoration:none}
+.coin-link:hover{text-decoration:underline}
+
+/* Balances panel tweaks */
+.balances-panel{padding:14px}
+
+/* Responsive helpers */
+.hide-mobile{display:table-cell}
+@media (max-width:720px){
+	.hide-mobile{display:none}
+	.search-input{min-width:120px}
+}
+
+.coin-cell{display:flex;flex-direction:column}
+.data-table th:nth-child(1){width:55%}
+.data-table th:nth-child(2){width:10%}
+.data-table th:nth-child(3){width:20%}
+.data-table th:nth-child(4){width:15%}
+.data-table td{vertical-align:middle}
+
+
+.coin-cell{flex-direction:row;gap:8px;align-items:center}
+.coin-symbol{font-size:12px;color:var(--muted);display:inline-block}
+
+
+.data-table th, .data-table td{white-space:normal;overflow:visible;text-overflow:clip}
+.data-table{table-layout:auto}
+
+
+
 
 @media (max-width:720px) {
 	.grid { grid-template-columns: 1fr }

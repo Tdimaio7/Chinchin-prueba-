@@ -8,9 +8,10 @@ import { Router } from '@angular/router';
     <div class="app-container">
       <header>
         <nav class="topbar">
-          <div class="brand">
+            <div class="brand">
             <div class="logo">App</div>
             <a routerLink="/">Inicio</a>
+            <a *ngIf="auth.isAuthenticated()" routerLink="/market" style="margin-left:12px">Mercado</a>
           </div>
           <div>
             <a *ngIf="!auth.isAuthenticated()" routerLink="/login" style="margin-left:12px">Iniciar sesión</a>
