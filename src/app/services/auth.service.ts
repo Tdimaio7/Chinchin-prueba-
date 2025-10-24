@@ -1,11 +1,28 @@
 import { Injectable } from '@angular/core';
 
-// Estructura simple para almacenar un usuario de la demo.
-export interface StoredUser {
-  email: string;
-  salt: string;
-  hash: string;
-}
+/**
+ * AuthService (demo)
+ * ------------------
+ * Responsabilidades:
+ * - Registro y login de usuarios en modo demo (almacenamiento en sessionStorage).
+ * - Derivación de clave (PBKDF2) y cifrado de tokens con Web Crypto API (AES-GCM).
+ * - Gestión de tokens "mock" (no JWT real): se cifran y almacenan como prueba de sesión.
+ *
+ * Contrato / API pública:
+ * - register(email,password): Promise<boolean>
+ * - login(email,password): Promise<string> -> devuelve token (encriptado en session)
+ * - logout(): void
+ * - isAuthenticated(): boolean
+ * - getToken()/decryptTokenFromSession(): gestión del token en memoria
+ * - createMagicToken/verifyMagicToken: flujo de token mágico para login sin contraseña
+ *
+ * Seguridad & límites:
+ * - Este servicio está pensado para demo/local: no es un sistema de autenticación seguro en producción.
+ * - Las claves y tokens se guardan en sessionStorage y la clave de sesión se mantiene en memoria.
+ * - Operaciones criptográficas usan Web Crypto (PBKDF2 y AES-GCM) con iteraciones elevadas.
+ */
+
+export interface StoredUser { email: string; salt: string; hash: string }
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -17,11 +34,10 @@ export class AuthService {
 
   constructor() {}
 
-  // --- helpers para manejo de múltiples usuarios en sessionStorage ---
   private getUsersMap(): Record<string, StoredUser> {
     const raw = sessionStorage.getItem(this.USERS_KEY);
     if (raw) {
-      try { return JSON.parse(raw) as Record<string, StoredUser>; } catch { /* fallthrough */ }
+      try { return JSON.parse(raw) as Record<string, StoredUser>; } catch { }
     }
     const legacy = sessionStorage.getItem(this.USER_KEY);
     if (legacy) {
@@ -32,22 +48,15 @@ export class AuthService {
         sessionStorage.setItem(this.USERS_KEY, JSON.stringify(map));
         sessionStorage.removeItem(this.USER_KEY);
         return map;
-      } catch { /* ignore and fallthrough */ }
+      } catch { }
     }
     return {};
   }
 
-  private setUsersMap(map: Record<string, StoredUser>) {
-    sessionStorage.setItem(this.USERS_KEY, JSON.stringify(map));
-  }
+  private setUsersMap(map: Record<string, StoredUser>) { sessionStorage.setItem(this.USERS_KEY, JSON.stringify(map)); }
 
-  // Helpers criptográficos (Web Crypto API)
-  private async generateSalt() {
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    return this.toBase64(salt);
-  }
+  private async generateSalt() { const salt = crypto.getRandomValues(new Uint8Array(16)); return this.toBase64(salt); }
 
-  // Deriva una clave desde la contraseña usando PBKDF2 (alta iteración) y devuelve bytes
   private async deriveKey(password: string, saltB64: string) {
     const salt = this.fromBase64(saltB64);
     const enc = new TextEncoder();
@@ -56,7 +65,6 @@ export class AuthService {
     return new Uint8Array(derived);
   }
 
-  // Conversión base64 para almacenar bytes en sessionStorage
   private toBase64(buf: Uint8Array) {
     let binary = '';
     const len = buf.byteLength;
@@ -72,13 +80,9 @@ export class AuthService {
     return bytes;
   }
 
-  // Registro (mock): guarda salt+hash en sessionStorage y evita duplicados
   async register(email: string, password: string) {
     const users = this.getUsersMap();
-    if (users[email]) {
-      throw new Error('El correo ya se utilizó');
-    }
-
+    if (users[email]) throw new Error('El correo ya se utilizó');
     const salt = await this.generateSalt();
     const hash = this.toBase64(await this.deriveKey(password, salt));
     const user: StoredUser = { email, salt, hash };
@@ -87,57 +91,36 @@ export class AuthService {
     return true;
   }
 
-  // Login: valida contraseña y cifra un token de sesión en sessionStorage
   async login(email: string, password: string) {
     const users = this.getUsersMap();
-  const user = users[email];
-  if (!user) throw new Error('No existe un usuario registrado con ese correo');
-  const derived = this.toBase64(await this.deriveKey(password, user.salt));
-  if (derived !== user.hash) throw new Error('Correo o contraseña incorrectos');
+    const user = users[email];
+    if (!user) throw new Error('No existe un usuario registrado con ese correo');
+    const derived = this.toBase64(await this.deriveKey(password, user.salt));
+    if (derived !== user.hash) throw new Error('Correo o contraseña incorrectos');
 
-  // Token de sesión mock (no es JWT real)
     const tokenPayload = { sub: email, iat: Date.now() };
     const token = btoa(JSON.stringify(tokenPayload));
+    const derivedRaw = await this.deriveKey(password, user.salt);
+    this.sessionKey = await crypto.subtle.importKey('raw', derivedRaw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
 
-  const derivedRaw = await this.deriveKey(password, user.salt);
-  this.sessionKey = await crypto.subtle.importKey('raw', derivedRaw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
-
-  // Cifrar token con AES-GCM y guardar iv+ct en sessionStorage
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const enc = new TextEncoder();
     const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, this.sessionKey, enc.encode(token));
     const ctB64 = this.toBase64(new Uint8Array(ct));
     const ivB64 = this.toBase64(iv);
-  sessionStorage.setItem(this.TOKEN_KEY, JSON.stringify({ iv: ivB64, ct: ctB64 }));
+    sessionStorage.setItem(this.TOKEN_KEY, JSON.stringify({ iv: ivB64, ct: ctB64 }));
 
     this.tokenValue = token;
+    try { sessionStorage.setItem('app_current_user', email); } catch {}
     return token;
   }
 
-  // Cierra la sesión: borra datos y limpia claves en memoria
-  logout() {
-    sessionStorage.removeItem(this.TOKEN_KEY);
-    sessionStorage.removeItem('magic_tokens');
-    this.sessionKey = null;
-    this.tokenValue = null;
-  }
+  logout() { sessionStorage.removeItem(this.TOKEN_KEY); sessionStorage.removeItem('magic_tokens'); this.sessionKey = null; this.tokenValue = null; try { sessionStorage.removeItem('app_current_user'); } catch {} }
 
-  // Indica si hay una sesión activa (se acepta token cifrado en sessionStorage como marca)
-  isAuthenticated(): boolean {
-    if (this.tokenValue) return true;
-    const raw = sessionStorage.getItem(this.TOKEN_KEY);
-    return !!raw;
-  }
+  isAuthenticated(): boolean { if (this.tokenValue) return true; const raw = sessionStorage.getItem(this.TOKEN_KEY); return !!raw; }
 
-  // Devuelve el token en memoria si existe; no intenta desencriptar aquí.
-  getToken(): string | null {
-    if (this.tokenValue) return this.tokenValue;
-    const raw = sessionStorage.getItem(this.TOKEN_KEY);
-    if (!raw) return null;
-    return 'session-token-present';
-  }
+  getToken(): string | null { if (this.tokenValue) return this.tokenValue; const raw = sessionStorage.getItem(this.TOKEN_KEY); if (!raw) return null; return 'session-token-present'; }
 
-  // Desencripta el token almacenado (requiere que sessionKey esté en memoria)
   async decryptTokenFromSession(): Promise<string | null> {
     const raw = sessionStorage.getItem(this.TOKEN_KEY);
     if (!raw || !this.sessionKey) return null;
@@ -154,15 +137,12 @@ export class AuthService {
     }
   }
 
-  // Magic link (mock): crea tokens de un solo uso y los guarda en sessionStorage
   async createMagicToken(email: string, ttlMs = 10 * 60_000) {
     const users = this.getUsersMap();
     const user = users[email];
     if (!user) throw new Error('Email no registrado');
-
     const rand = crypto.getRandomValues(new Uint8Array(12));
     const token = this.toBase64(rand) + '.' + Date.now();
-
     const storeRaw = sessionStorage.getItem('magic_tokens');
     const map = storeRaw ? JSON.parse(storeRaw) : {};
     map[token] = { email, exp: Date.now() + ttlMs };
@@ -170,27 +150,18 @@ export class AuthService {
     return token;
   }
 
-  // Verifica token mágico, consume el token y crea sesión cifrada
   async verifyMagicToken(token: string) {
-  const storeRaw = sessionStorage.getItem('magic_tokens');
+    const storeRaw = sessionStorage.getItem('magic_tokens');
     if (!storeRaw) throw new Error('Token inválido o expirado');
     const map = JSON.parse(storeRaw || '{}');
     const meta = map[token];
     if (!meta) throw new Error('Token inválido');
-    if (meta.exp < Date.now()) {
-      delete map[token];
-      sessionStorage.setItem('magic_tokens', JSON.stringify(map));
-      throw new Error('Token expirado');
-    }
+    if (meta.exp < Date.now()) { delete map[token]; sessionStorage.setItem('magic_tokens', JSON.stringify(map)); throw new Error('Token expirado'); }
 
-    const email = meta.email;
-  delete map[token];
-  sessionStorage.setItem('magic_tokens', JSON.stringify(map));
-
+    const email = meta.email; delete map[token]; sessionStorage.setItem('magic_tokens', JSON.stringify(map));
     const tokenPayload = { sub: email, iat: Date.now(), via: 'magic' };
     const sessToken = btoa(JSON.stringify(tokenPayload));
 
-  // Generar clave AES-GCM aleatoria para la sesión y cifrar el token
     const sessionKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
     const raw = new Uint8Array(await crypto.subtle.exportKey('raw', sessionKey));
     this.sessionKey = await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
@@ -202,6 +173,7 @@ export class AuthService {
     const ivB64 = this.toBase64(iv);
     sessionStorage.setItem(this.TOKEN_KEY, JSON.stringify({ iv: ivB64, ct: ctB64 }));
     this.tokenValue = sessToken;
+    try { sessionStorage.setItem('app_current_user', email); } catch {}
     return sessToken;
   }
 }

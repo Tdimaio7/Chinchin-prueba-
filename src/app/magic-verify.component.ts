@@ -1,3 +1,9 @@
+/**
+ * MagicVerifyComponent
+ * - Consume el token mágico (pasado por ruta) y delega la verificación en AuthService.verifyMagicToken.
+ * - En caso de éxito redirige al home; en caso contrario muestra error.
+ * - Diseño pensado para demo: el token se almacena temporalmente en sessionStorage por AuthService.
+ */
 import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from './services/auth.service';

@@ -1,3 +1,9 @@
+/**
+ * MagicLinkComponent
+ * - Flujo de inicio de sesión vía "link mágico" (simulado para demo).
+ * - Genera un token que se devuelve como enlace simulado; la verificación se realiza en MagicVerifyComponent.
+ * - Limita intentos y protege el flujo con rate-limiting local.
+ */
 import { Component } from '@angular/core';
 import { AuthService } from './services/auth.service';
 import { Router } from '@angular/router';

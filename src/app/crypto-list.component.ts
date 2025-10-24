@@ -1,6 +1,18 @@
+/**
+ * CryptoListComponent
+ * - Lista el mercado de criptomonedas y ofrece filtros/ordenamiento.
+ * - Muestra panel de saldos del usuario si está habilitado en SettingsService.
+ * - Mantiene refresco automático configurable (SettingsService.refreshInterval).
+ *
+ * Contrato:
+ * - Depende de CryptoService para datos de mercado y PortfolioService para saldos.
+ * - Expone acciones de filtrado/sort en la UI; no tiene APIs públicas aparte del template.
+ */
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CryptoService, CryptoItem } from './services/crypto.service';
 import { interval, Subscription } from 'rxjs';
+import { PortfolioService } from './services/portfolio.service';
+import { SettingsService } from './services/settings.service';
 
 interface Balance { symbol: string; amount: number }
 
@@ -47,8 +59,8 @@ interface Balance { symbol: string; amount: number }
               <tr>
                 <th (click)="sortBy('name')">Nombre</th>
                 <th (click)="sortBy('symbol')">Símbolo</th>
-                <th (click)="sortBy('current_price')">Precio (USD)</th>
-                <th (click)="sortBy('price_change_percentage_24h')">Cambio 24h %</th>
+                <th class="numeric" (click)="sortBy('current_price')">Precio (USD)</th>
+                <th class="numeric" (click)="sortBy('price_change_percentage_24h')">Cambio 24h %</th>
               </tr>
             </thead>
             <tbody>
@@ -59,8 +71,8 @@ interface Balance { symbol: string; amount: number }
                   </div>
                 </td>
                 <td class="hide-mobile">{{c.symbol | uppercase}}</td>
-                <td>{{c.current_price | number:'1.2-2'}}</td>
-                <td>
+                <td class="numeric">{{c.current_price | number:'1.2-2'}}</td>
+                <td class="numeric">
                   <span [ngClass]="{'badge-up': (c.price_change_percentage_24h || 0) >= 0, 'badge-down': (c.price_change_percentage_24h || 0) < 0}">
                     {{c.price_change_percentage_24h | number:'1.2-2'}}%
                   </span>
@@ -70,16 +82,16 @@ interface Balance { symbol: string; amount: number }
           </table>
         </div>
 
-        <div style="flex:1">
+        <div *ngIf="showBalances" style="flex:1">
           <div class="balances-panel card">
             <div class="title">Saldos</div>
             <table class="data-table">
-              <thead><tr><th>Cripto</th><th>Cantidad</th><th>Valor USD</th></tr></thead>
+              <thead><tr><th>Cripto</th><th class="numeric">Cantidad</th><th class="numeric">Valor USD</th></tr></thead>
               <tbody>
                 <tr *ngFor="let b of balances">
                   <td>{{b.symbol | uppercase}}</td>
-                  <td>{{b.amount}}</td>
-                  <td>{{balanceValue(b.symbol) | number:'1.2-2'}}</td>
+                  <td class="numeric">{{b.amount}}</td>
+                  <td class="numeric">{{balanceValue(b.symbol) | number:'1.2-2'}}</td>
                 </tr>
               </tbody>
             </table>
@@ -100,14 +112,13 @@ export class CryptoListComponent implements OnInit, OnDestroy {
   public changeMin: number | null = null;
   public changeMax: number | null = null;
 
-  // Saldos mock del usuario
-  public balances: Balance[] = [
-    { symbol: 'btc', amount: 0.1234 },
-    { symbol: 'eth', amount: 1.5 },
-    { symbol: 'usdt', amount: 200 }
-  ];
+  public balances: Balance[] = [];
+  private balSub: Subscription | null = null;
+  private settingsSub: Subscription | null = null;
+  public showBalances = true;
+  private refreshInterval = 30;
 
-  constructor(private svc: CryptoService) {}
+  constructor(private svc: CryptoService, private portfolio: PortfolioService, private settings: SettingsService) {}
 
   resetFilters() {
     this.filter = '';
@@ -119,15 +130,39 @@ export class CryptoListComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.load();
-    this.sub = interval(30_000).subscribe(() => this.load());
+  const s = this.settings.getValue();
+  this.showBalances = s.showBalances;
+  this.refreshInterval = s.refreshInterval;
+  if (this.refreshInterval && this.refreshInterval > 0) this.startAuto(this.refreshInterval);
+
+    this.balSub = this.portfolio.balances$.subscribe(b => this.balances = b.slice());
+
+    this.settingsSub = this.settings.settings$.subscribe(cfg => {
+      this.showBalances = cfg.showBalances;
+      if ((cfg.refreshInterval || 0) !== this.refreshInterval) {
+        this.refreshInterval = cfg.refreshInterval || 0;
+        if (this.refreshInterval > 0) this.startAuto(this.refreshInterval); else this.stopAuto();
+      }
+    });
   }
 
   ngOnDestroy() {
     this.sub?.unsubscribe();
+    this.balSub?.unsubscribe();
   }
 
   load() {
     this.svc.fetchMarket().subscribe(list => this.list = list);
+  }
+
+  private startAuto(intervalSec: number) {
+    this.stopAuto();
+    this.sub = interval(intervalSec * 1000).subscribe(() => this.load());
+  }
+
+  private stopAuto() {
+    this.sub?.unsubscribe();
+    this.sub = null;
   }
 
   filteredList() {

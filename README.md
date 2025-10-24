@@ -1,6 +1,6 @@
-# Chinchin Frontend - Prueba
+# Frontend - Prueba
 
-Proyecto Angular demo para la prueba técnica de Chinchin. Este README refleja el estado actual del desarrollo: funcionalidad de autenticación mock, cifrado de token, protecciones UI/anti-bot y almacenamiento en `sessionStorage`.
+Proyecto Angular demo para la prueba técnica. Este README refleja el estado actual del desarrollo: funcionalidad de autenticación mock, cifrado de token, protecciones UI/anti-bot y almacenamiento en `sessionStorage`.
 
 Estado actual: Autenticación (COMPLETADA - demo)
 
@@ -71,3 +71,57 @@ Archivos clave
 - `src/app/login.component.ts`, `src/app/register.component.ts` — formularios y controles anti-bot.
 - `src/app/interceptors/token.interceptor.ts` — añade Authorization si `AuthService` tiene token en memoria.
 - `src/app/guards/auth.guard.ts` — protección de rutas.
+
+---
+
+## Cómo ejecutar el proyecto (rápido)
+
+1. Instalar dependencias:
+
+```powershell
+npm install
+```
+
+2. Ejecutar en modo desarrollo:
+
+```powershell
+npm start
+# o
+ng serve --open
+```
+
+3. Abrir en el navegador:
+
+http://localhost:4200
+
+## Build de producción
+
+```powershell
+npm run build
+# o
+ng build --configuration production
+```
+
+## Nota sobre la limpieza de caché
+
+Se detectó que la carpeta `.angular/cache` fue accidentalmente añadida al historial y contenía archivos mayores a 100MB, lo que provocó rechazos al `git push` hacia GitHub. Para resolverlo:
+
+- Se reescribió el historial del repositorio para eliminar `.angular/cache` y se forzó un push a `origin/main`.
+- Se actualizó `.gitignore` para incluir `.angular/` y `.angular/cache/`.
+
+Si trabajas en una copia local anterior al reescrito, sincronízala con:
+
+```powershell
+git fetch origin
+git reset --hard origin/main
+```
+
+> Importante: esto sobrescribirá tu rama local. Si tienes trabajo no commiteado, guárdalo antes.
+
+## Estado y próximos pasos
+
+- Autenticación mock: completada.
+- Listado de criptomonedas y saldos: implementado (parcial).
+- Pendiente: detalle con gráficos históricos, exchange UI, persistencia y tests.
+
+Si quieres que continúe con el detalle de criptomoneda (gráfico histórico y datos), lo empiezo ahora.

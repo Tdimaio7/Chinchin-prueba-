@@ -1,7 +1,15 @@
-import { Component } from '@angular/core';
+/**
+ * HomeComponent
+ * - Panel principal (dashboard) que resume saldo total y actividad reciente.
+ * - Escucha balances$ y history$ para mostrar información en tiempo real.
+ * - Navegación: enlaza a mercado e historial.
+ */
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { PortfolioService } from './services/portfolio.service';
 import { CryptoService } from './services/crypto.service';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { SettingsService } from './services/settings.service';
 
 @Component({
   selector: 'app-home',
@@ -20,26 +28,52 @@ import { Router } from '@angular/router';
     <div class="grid" style="margin-top:16px">
       <div class="card" (click)="goMarket()" style="cursor:pointer">
         <div class="title">Mercado</div>
-        <p class="muted">Listado con actualización cada 30s, filtros y ordenamiento. Haz click para abrir mercado.</p>
+        <p class="muted">Listado con actualización periódica, filtros y ordenamiento. Haz click para abrir mercado.</p>
       </div>
-      <div class="card">
+
+      <div class="card" role="button" tabindex="0" (click)="goHistory()" (keydown.enter)="goHistory()" style="cursor:pointer">
         <div class="title">Actividad reciente</div>
-        <p class="muted">Transacciones simuladas y movimientos.</p>
+        <div *ngIf="showRecent">
+          <div *ngIf="recent.length > 0">
+            <ul style="margin:0;padding:0;list-style:none">
+              <li *ngFor="let r of recent" style="padding:8px 0;border-bottom:1px solid #f0f6fb">
+                <div><strong>{{r.amountFrom | number:'1.4-8'}} {{r.from | uppercase}}</strong> → <strong>{{r.amountTo | number:'1.4-8'}} {{r.to | uppercase}}</strong></div>
+                <div class="muted-sm">{{r.ts | date:'short'}}</div>
+              </li>
+            </ul>
+            <div style="margin-top:8px" class="muted-sm">Haz click en el cuadro para ver el historial completo</div>
+          </div>
+          <div *ngIf="recent.length === 0" class="muted-sm">No hay actividad reciente</div>
+        </div>
+        <div *ngIf="!showRecent" class="muted-sm">La sección de actividad reciente está oculta (ajustes).</div>
       </div>
     </div>
   `
 })
 export class HomeComponent {
   public totalUSD = 0;
-  constructor(private portfolio: PortfolioService, private crypto: CryptoService, private router: Router) {}
+  private sub: Subscription | null = null;
+  private historySub: Subscription | null = null;
+  private settingsSub: Subscription | null = null;
+  public recent: any[] = [];
+  public showRecent = true;
+
+  constructor(private portfolio: PortfolioService, private crypto: CryptoService, private router: Router, private settings: SettingsService) {}
 
   ngOnInit() {
+    this.sub = this.portfolio.balances$.subscribe(() => this.calculateTotal());
+    this.historySub = this.portfolio.history$.subscribe(h => { this.recent = (h || []).slice(0,5); });
+    this.showRecent = this.settings.getValue().showRecentActivity;
+    this.settingsSub = this.settings.settings$.subscribe(s => this.showRecent = s.showRecentActivity);
     this.calculateTotal();
   }
 
+  ngOnDestroy() { this.sub?.unsubscribe(); this.historySub?.unsubscribe(); this.settingsSub?.unsubscribe(); }
+
+  goHistory() { this.router.navigate(['/history']); }
+
   async calculateTotal() {
     const balances = this.portfolio.getBalances();
-    // cargar mercado y calcular valor
     this.crypto.fetchMarket().subscribe(list => {
       let sum = 0;
       for (const b of balances) {

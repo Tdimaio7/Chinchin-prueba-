@@ -1,3 +1,9 @@
+/**
+ * LoginComponent
+ * - Formulario de acceso con heurísticas anti-bot (honeypot, captcha, timing) y rate-limiting local.
+ * - Usa AuthService.login para autenticar al usuario (demo) y Router para redirecciones.
+ * - Efectos secundarios: escribe en sessionStorage intentos/estado temporal.
+ */
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from './services/auth.service';
@@ -34,10 +40,8 @@ import { AuthService } from './services/auth.service';
             </div>
             <div class="muted-sm" *ngIf="error" style="color:#b00020">{{error}}</div>
 
-            <!-- campo honeypot oculto para detectar bots -->
             <input name="hp_field" class="hp-hidden" autocomplete="off" />
 
-            <!-- captcha matemático estético -->
             <div class="captcha-row">
               <div class="captcha-box" aria-hidden="true">
                 <div class="captcha-prompt">Resuelve</div>
@@ -70,7 +74,6 @@ export class LoginComponent {
   private formRenderedAt = 0;
   constructor(private auth: AuthService, private router: Router) {}
 
-  // Inicializa captcha y marca el tiempo de renderizado (antispam)
   ngOnInit() {
     this.generateCaptcha();
     this.formRenderedAt = Date.now();
@@ -86,7 +89,6 @@ export class LoginComponent {
       return;
     }
 
-    // Comprueba honeypot (campo oculto para bots)
   const form = e.target as HTMLFormElement;
   const hp = (form.elements.namedItem('hp_field') as HTMLInputElement | null)?.value;
     if (hp) {
@@ -95,13 +97,11 @@ export class LoginComponent {
       return;
     }
 
-    // Heurística de tiempo: evitar envíos demasiado rápidos (<2s)
     if (Date.now() - this.formRenderedAt < 2000) {
       this.error = 'Por favor espera un momento antes de enviar';
       return;
     }
 
-    // Validar respuesta del captcha
     if (this.captchaResponse === null || this.captchaResponse !== this.captchaAnswer) {
       this.captchaError = 'Respuesta incorrecta al captcha';
       this.generateCaptcha();

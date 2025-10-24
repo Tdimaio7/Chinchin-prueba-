@@ -1,3 +1,9 @@
+/**
+ * RegisterComponent
+ * - Formulario de registro (demo). Aplica las mismas protecciones anti-bot que LoginComponent.
+ * - Llama a AuthService.register y muestra mensajes de éxito o error.
+ * - Persistencia: no escribe datos sensibles en localStorage/remote; los usuarios demo se guardan en sessionStorage.
+ */
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from './services/auth.service';
@@ -34,10 +40,8 @@ import { AuthService } from './services/auth.service';
 
             <div *ngIf="success" class="muted-sm" style="color:green">{{success}}</div>
             <div *ngIf="error" class="muted-sm" style="color:#b00020">{{error}}</div>
-            <!-- campo honeypot oculto para detectar bots -->
             <input name="hp_field" class="hp-hidden" autocomplete="off" />
 
-            <!-- captcha matemático estético -->
             <div class="captcha-row">
               <div class="captcha-box" aria-hidden="true">
                 <div class="captcha-prompt">Resuelve</div>
@@ -71,7 +75,6 @@ export class RegisterComponent {
   private formRenderedAt = 0;
   constructor(private auth: AuthService, private router: Router) {}
 
-  // Inicializa el captcha y guarda el timestamp de renderizado (anti-bots)
   ngOnInit() {
     this.generateCaptcha();
     this.formRenderedAt = Date.now();
@@ -82,14 +85,12 @@ export class RegisterComponent {
     this.error = null;
     this.success = null;
     this.captchaError = null;
-    // rate-limit
     const blocked = this.checkRateLimit('register_attempts');
     if (blocked.blocked) {
       this.error = `Demasiados intentos. Intenta de nuevo en ${Math.ceil(blocked.remaining / 1000)}s`;
       return;
     }
 
-    // Honeypot: si el campo oculto contiene texto, probablemente es un bot
     const form = e.target as HTMLFormElement;
     const hp = (form.elements.namedItem('hp_field') as HTMLInputElement | null)?.value;
     if (hp) {
@@ -97,12 +98,10 @@ export class RegisterComponent {
       this.addAttempt('register_attempts');
       return;
     }
-    // Heurística temporal: evita envíos demasiado rápidos (<2s)
     if (Date.now() - this.formRenderedAt < 2000) {
       this.error = 'Por favor espera un momento antes de enviar';
       return;
     }
-    // Validación del captcha
     if (this.captchaResponse === null || this.captchaResponse !== this.captchaAnswer) {
       this.captchaError = 'Respuesta incorrecta al captcha';
       this.generateCaptcha();
