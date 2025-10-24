@@ -29,10 +29,10 @@ import { Router } from '@angular/router';
               <a *ngIf="auth.isAuthenticated()" routerLink="/settings">Configuración</a>
             </div>
           </div>
-          <div>
-            <a *ngIf="!auth.isAuthenticated()" routerLink="/login">Iniciar sesión</a>
-            <a *ngIf="!auth.isAuthenticated()" routerLink="/register">Registro</a>
-            <a *ngIf="auth.isAuthenticated()" (click)="logout()">Cerrar sesión</a>
+          <div class="auth-links">
+            <a *ngIf="!auth.isAuthenticated()" routerLink="/login" class="auth-link login">Iniciar sesión</a>
+            <a *ngIf="!auth.isAuthenticated()" routerLink="/register" class="auth-link register">Registro</a>
+            <a *ngIf="auth.isAuthenticated()" (click)="logout()" class="auth-link logout">Cerrar sesión</a>
           </div>
         </nav>
       </header>

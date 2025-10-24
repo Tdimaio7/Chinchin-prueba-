@@ -1,127 +1,58 @@
-# Frontend - Prueba
+# Chinchin - Prueba Frontend (Angular)
 
-Proyecto Angular demo para la prueba técnica. Este README refleja el estado actual del desarrollo: funcionalidad de autenticación mock, cifrado de token, protecciones UI/anti-bot y almacenamiento en `sessionStorage`.
+Demo Angular que implementa los requisitos de la prueba técnica de Chinchin.
 
-Estado actual: Autenticación (COMPLETADA - demo)
+Requisitos mínimos
 
-Principales características implementadas
+- Node.js 16+ y npm
 
-- Registro y login mock (front-end): el registro guarda un objeto de usuario en `sessionStorage` con { email, salt, hash }.
-- Derivación de contraseña: PBKDF2 (SHA-256, 100k iteraciones) para derivar la clave/huella.
-- Token de sesión cifrado: se genera un token mock (payload base64) y se cifra con AES-GCM; el iv y ciphertext se almacenan en `sessionStorage` bajo la clave `app_token_enc`.
-- Almacenamiento exclusivamente en `sessionStorage`: por petición del encargo no se usan `localStorage` para datos sensibles.
-- Magic Link (mock): generación y verificación de tokens de un solo uso almacenados en `sessionStorage` (`magic_tokens`).
-- Protecciones anti-bot y UX:
-	- Honeypot (campo oculto) en formularios.
-	- Captcha matemático estético.
-	- Heurística de tiempo (no aceptar envíos < 2s tras renderizado).
-	- Rate-limiting simple: intentos registrados en `sessionStorage` (ej. `login_attempts`, `register_attempts`).
-- Interceptor HTTP (`TokenInterceptor`): añade header Authorization si el token está en memoria.
-- Guardas de ruta (`AuthGuard`): protegen rutas que requieren autenticación.
-
-Keys principales en sessionStorage
-
-- `app_users` — mapa de usuarios registrados (email → { email, salt, hash }). El código migra automáticamente desde la key legacy `app_user` si existe.
-- `app_token_enc` — objeto { iv: string(base64), ct: string(base64) } con el token cifrado (AES-GCM).
-- `magic_tokens` — mapa de tokens mágicos temporales para el flujo de magic link.
-- `login_attempts`, `register_attempts`, `magic_attempts` — arrays de timestamps usados para rate-limiting.
-
-Limitaciones y notas de seguridad
-
-- Demo frontend: no hay backend real. No utilices esto en producción tal cual.
-- La demostración usa Web Crypto (PBKDF2 + AES-GCM) para enseñar mejores prácticas, pero la verdadera seguridad requiere:
-	- Almacenar usuarios y hashes en el servidor.
-	- Gestionar sesiones y tokens con cookies seguras o JWT firmados por el backend.
-	- Políticas de expiración, revocación y transporte seguro (HTTPS).
-- El interceptor no espera operaciones asíncronas para desencriptar el token; si recargas la página la clave derivada de la contraseña se pierde y `getToken()` devolverá una marca que indica token presente en sesión, pero no el valor desencriptado hasta re-login o verificación mágica.
-
-Mensajes y localización
-
-- UI y mensajes de error están en español (ej. duplicados, errores de login ahora muestran ``Correo o contraseña incorrectos``).
-
-Cómo probar rápidamente
-
-1. Instalar dependencias:
+Instalación
 
 ```powershell
 npm install
 ```
 
-2. Ejecutar en modo desarrollo:
+Desarrollo
 
 ```powershell
 npm start
 ```
 
-3. Flujo básico:
-	- Abre http://localhost:4200
-	- Regístrate (email + contraseña ≥ 6 caracteres).
-	- Inicia sesión con las credenciales.
-	- Tras login el token cifrado aparecerá en `sessionStorage` bajo `app_token_enc`.
+Build de producción
 
-4. Magic Link (mock): generar token mágico desde la UI y usar el flujo de verificación.
+```powershell
+npm run build -- --configuration production
+```
 
-5. Probar protecciones anti-bot:
-	- Envía el formulario rápidamente (<2s) o rellena el honeypot para ver el rechazo.
-	- Fallar el captcha repetidamente y observar rate-limiting.
+Cobertura de la prueba (resumen)
+
+- Autenticación de usuario: Implementado (mock). Registro, login y cierre de sesión. Tokens cifrados en `sessionStorage` (AES-GCM). — Implementado
+- Almacenamiento seguro de tokens: Token cifrado y guardado en `sessionStorage` (demo). — Implementado
+- Mostrar lista de criptomonedas y refresco cada 30s: Lista y refresco implementados; integración con API pública y fallback. — Parcial/Implementado
+- Saldos del usuario (data estática): Implementado (servicio de portfolio con saldos iniciales). — Implementado
+- Filtrado/ordenado de la lista: Filtros y orden básico en la UI. — Implementado
+- Detalle de criptomoneda (gráficos históricos): Página de detalle disponible; gráficos básicos/placeholder. — Parcial
+- Intercambio de criptomonedas: UI de intercambio con tasa limitada por tiempo, cálculo y ejecución (actualiza saldos). — Implementado
+- Historial de transacciones: Registro básico de operaciones en almacenamiento local. — Parcial
+- Sección de configuración: Vistas y opciones básicas presentes (mostrar/ocultar vistas, refresco). — Parcial
+
+Notas importantes
+
+- Fallbacks fijos cuando la API falla:
+	- 1 PTR = 60 USD
+	- 37.85 BS = 1 USD
+
+- La app usa APIs públicas (CoinGecko/Binance como referencia). Ver `src/app/services/crypto.service.ts`.
 
 Archivos clave
 
-- `src/app/services/auth.service.ts` — lógica central de auth (PBKDF2, AES-GCM, almacenamiento en sessionStorage, magic link).
-- `src/app/login.component.ts`, `src/app/register.component.ts` — formularios y controles anti-bot.
-- `src/app/interceptors/token.interceptor.ts` — añade Authorization si `AuthService` tiene token en memoria.
-- `src/app/guards/auth.guard.ts` — protección de rutas.
+- `src/app/services/auth.service.ts` — autenticación (PBKDF2 + AES-GCM), token mock.
+- `src/app/login.component.ts`, `src/app/register.component.ts` — formularios y protecciones anti-bot.
+- `src/app/services/crypto.service.ts` — obtención de precios y fallbacks PTR/BS.
+- `src/app/exchange.component.ts` — lógica y UI del intercambio.
+- `src/app/services/portfolio.service.ts` — saldos y ejecución de operaciones.
 
----
+Despliegue
 
-## Cómo ejecutar el proyecto (rápido)
-
-1. Instalar dependencias:
-
-```powershell
-npm install
-```
-
-2. Ejecutar en modo desarrollo:
-
-```powershell
-npm start
-# o
-ng serve --open
-```
-
-3. Abrir en el navegador:
-
-http://localhost:4200
-
-## Build de producción
-
-```powershell
-npm run build
-# o
-ng build --configuration production
-```
-
-## Nota sobre la limpieza de caché
-
-Se detectó que la carpeta `.angular/cache` fue accidentalmente añadida al historial y contenía archivos mayores a 100MB, lo que provocó rechazos al `git push` hacia GitHub. Para resolverlo:
-
-- Se reescribió el historial del repositorio para eliminar `.angular/cache` y se forzó un push a `origin/main`.
-- Se actualizó `.gitignore` para incluir `.angular/` y `.angular/cache/`.
-
-Si trabajas en una copia local anterior al reescrito, sincronízala con:
-
-```powershell
-git fetch origin
-git reset --hard origin/main
-```
-
-> Importante: esto sobrescribirá tu rama local. Si tienes trabajo no commiteado, guárdalo antes.
-
-## Estado y próximos pasos
-
-- Autenticación mock: completada.
-- Listado de criptomonedas y saldos: implementado (parcial).
-- Pendiente: detalle con gráficos históricos, exchange UI, persistencia y tests.
-
-Si quieres que continúe con el detalle de criptomoneda (gráfico histórico y datos), lo empiezo ahora.
+- `netlify.toml` incluido y deploy realizado con Netlify CLI; publicación desde `dist/frontend-demo`.
+- Sitio público (deploy actual): https://chinchin-prueba.netlify.app

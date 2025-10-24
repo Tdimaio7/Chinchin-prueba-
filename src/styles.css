@@ -129,4 +129,28 @@ body{
   .data-table td{white-space:normal}
 }
 
+/* Header auth links (login / register) - make them spaced and pill-like) */
+.auth-links{display:flex;align-items:center;gap:8px}
+.auth-links .auth-link{display:inline-block;padding:6px 12px;border-radius:999px;color:rgba(255,255,255,0.95);text-decoration:none;font-weight:700;border:1px solid rgba(255,255,255,0.06);background:transparent;transition:transform .12s ease,box-shadow .12s ease}
+.auth-links .auth-link.login{background:transparent;color:rgba(255,255,255,0.95)}
+.auth-links .auth-link.register{background:rgba(255,255,255,0.12);color:#fff}
+.auth-links .auth-link.logout{background:transparent;color:rgba(255,255,255,0.95)}
+.auth-links .auth-link:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.06)}
+
+/* Captcha / 'Resuelve' styling improvements */
+.captcha-row{display:flex;gap:12px;align-items:center;margin-top:12px}
+.captcha-box{background:linear-gradient(180deg,#ffffff,#fbfeff);padding:10px 14px;border-radius:10px;border:1px solid #eef7fb;display:flex;flex-direction:column;align-items:flex-start;min-width:140px}
+.captcha-prompt{font-size:13px;color:var(--muted);margin-bottom:4px}
+.captcha-question{font-weight:800;font-size:18px;color:var(--text-900)}
+.captcha-controls{display:flex;gap:8px;align-items:center}
+.captcha-input{width:160px;padding:8px 10px;border-radius:8px;border:1px solid #e6f0fb;background:#fbfeff;font-size:14px}
+.captcha-refresh{display:inline-flex;align-items:center;justify-content:center;padding:8px;border-radius:8px;border:1px solid #e6f0fb;background:transparent;cursor:pointer}
+.captcha-refresh svg{display:block}
+.captcha-note{margin-top:8px}
+
+@media (max-width:520px){
+  .captcha-row{flex-direction:column;align-items:flex-start}
+  .captcha-input{width:100%}
+}
+
 
