@@ -6,7 +6,8 @@
     "ng": "ng",
   "start": "ng serve --open --host 127.0.0.1",
     "build": "ng build --configuration production",
-    "test": "ng test"
+    "test": "ng test",
+    "deploy:netlify": "netlify deploy --prod --dir=dist/frontend-demo --message \"Deploy: from npm script\""
   },
   "dependencies": {
     "@angular/animations": "^18.0.0",
@@ -25,6 +26,7 @@
     "@angular/cli": "^18.0.0",
     "@angular/compiler-cli": "^18.0.0",
   "@angular-devkit/build-angular": "^18.0.0",
-    "typescript": "~5.4.5"
+    "typescript": "~5.4.5",
+    "netlify-cli": "^18.11.0"
   }
 }

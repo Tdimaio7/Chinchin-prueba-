@@ -56,3 +56,22 @@ Despliegue
 
 - `netlify.toml` incluido y deploy realizado con Netlify CLI; publicación desde `dist/frontend-demo`.
 - Sitio público (deploy actual): https://chinchin-prueba.netlify.app
+
+Deploy desde CLI (no interactivo)
+
+Si prefieres desplegar sin prompts usando un token y opcionalmente un `site-id`:
+
+Windows (cmd):
+
+```powershell
+set NETLIFY_AUTH_TOKEN=TU_TOKEN_AQUI & npx netlify deploy --prod --dir=dist/frontend-demo --site-id TU_SITE_ID --message "Deploy: UI fixes"
+```
+
+PowerShell:
+
+```powershell
+$env:NETLIFY_AUTH_TOKEN="TU_TOKEN_AQUI"
+npx netlify deploy --prod --dir=dist/frontend-demo --site-id TU_SITE_ID --message "Deploy: UI fixes"
+```
+
+También existe el script npm `deploy:netlify` agregado al `package.json` que ejecuta el comando si tienes `netlify-cli` instalado y `NETLIFY_AUTH_TOKEN` en el entorno.
